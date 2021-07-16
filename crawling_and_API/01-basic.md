@@ -19,7 +19,7 @@
 
 6. 나머지는 코드로...
 
-   ```python
+   ```
    import requests
    from bs4 import BeautifulSoup
    
@@ -52,8 +52,6 @@
    print(answer.text)
    ```
 
-
-
 ## 2. API
 
 1. 크롤링과 같은 과정이기 때문에 import requests만 해준다.
@@ -62,7 +60,7 @@
 
 3. 나머지는 코드로...
 
-   ```python
+   ```
    import requests
    
    url = 'https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=971'
@@ -78,8 +76,4 @@
    data = res.json()
    
    print(data['bnusNo'])
-   
    ```
-
-   
-
