@@ -1,7 +1,5 @@
 # Python[2021.07.20]
 
-### 
-
 ### 1. iterable
 
 - iterable하다는 것은 for문에 넣을 수 있다는 것이다.
