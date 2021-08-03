@@ -355,3 +355,13 @@
 </html>
 ```
 
+## 8. 기타
+
+- 중앙정렬
+
+  inline요소 => text-align : center 
+  block요소 => margin auto
+
+- margin과 margin이 겹치면 상쇄되지만
+
+  margin과 padding는 상쇄되지 않는다. 
