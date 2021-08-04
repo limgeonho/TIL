@@ -221,6 +221,8 @@ p + span {  => +로 구분
 - **마진상쇄
   => blockA의 top과 blockB의 bottom에 적용된 각각의 margin이 겹칠 때 둘 중 큰 마진 값으로 결합하는 현상
 
+- 마진상쇄는 세로에서만 적용된다.(가로에서는 적용되지 않음)
+  
 - CSS Display
 
   CSS는 원래 전부 네모임
