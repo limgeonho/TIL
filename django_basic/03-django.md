@@ -260,5 +260,10 @@
       return redirect('articles:detail', article.pk)
   ```
 
-  
 
+
+
+## 7. 기타
+
+- 페이지는 먼저 html페이지를 보여주고(render) -> 내부적으로 데이터CRUD를 한 뒤에 다른 페이지로 보낸다(redirect)
+- from .models import Article? => models.py에서 Article를 의미함
