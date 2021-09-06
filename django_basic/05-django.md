@@ -151,7 +151,30 @@
       -> meta class를 통해 해당 model을 참고한다고 알려줘야함
 
     - ```python
-      class ArticleForm(forms.ModelForm):  
+      class ArticleForm(forms.ModelForm):
+          # HTML 요소
+          title = forms.CharField(
+              label='제목',
+              widget=forms.TextInput(
+                  attrs={
+                      'class': 'my_title',
+                      'placeholder': 'Enter the title',
+                      'maxlength': 10,
+                  }
+              )
+          )
+          content = forms.CharField(
+              label='내용',
+              widget=forms.Textarea(
+                  attrs={
+                      'class': 'my_content',
+                      'placeholder': 'Enter the content',
+                      'rows': 5,
+                      'cols': 50,
+                  }
+              )
+          )
+      
           # 반드시 작성
           class Meta:
               model = Article
@@ -161,6 +184,7 @@
               fields = '__all__'
               # 제외하고 싶은 field
               # exclude = ('title',)
+      
       ```
 
 - Validation
@@ -272,8 +296,6 @@
       return render(request, 'articles/create.html', context)
   ```
 
-- update~~~
-
 - 결론
 
   - Form vs ModelForm
@@ -314,8 +336,14 @@
      - ```python
        from django.shortcuts import render, redirect, get_object_or_404
        
-       # article = Article.objects.get(pk=pk)
+       @require_safe
+       def detail(request, pk):
+           # article = Article.objects.get(pk=pk)
            article = get_object_or_404(Article, pk=pk)
+           context = {
+               'article': article,
+           }
+           return render(request, 'articles/detail.html', context)
        ```
 
 - django view decorators
@@ -352,4 +380,8 @@
         pass
     ```
 
-  - 
+
+
+## 4. 기타(장고 시작 순서)
+
+- ![장고시작순서](https://user-images.githubusercontent.com/73927750/132238211-6e0d8fb7-bf17-4bb8-8c88-8f7e6d2030cc.JPG)
