@@ -1,192 +1,201 @@
-# Django[2021.09.09]
-
-## 1. static
-
-```python
-# settings.py 
-
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static',]  # 추가로 탐색해 주세요
-```
-
-```html
-# base.html
-
-<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-<script src="{% static 'js/bootstrap.min.js' %}"></script>
--> bootstrap 압축파일을 다운로드 받아서 프로젝트 내부에 저장하고 사용(BASE_DIR/static/css and js)
--> STATICFILES_DIRS = [BASE_DIR / 'static',] 이거 설정해야 사용가능
-===============================================================================
-# index.html
-
-{% load static %}
-{% load bootstrap5 %}
-<img class="rounded mx-auto d-block" src="{% static 'articles/images/ssafy.png' %}" alt="ssafy banner">
--> app 내부의 static/articles/images 내부에 sample 이미지 저장(logo...)
--> 장고가 알아서 app안에 있는 static 파일에 접근해서 불러온다
-```
+# Django[2021.09.10]
 
 
 
-## 2. mediafiles
+## 1. django form
 
-```python
-# settings.py 
+- form의 역할
+  1. validation - 중요!
+  2. HTML(`<input>`)생성
+- work flow(기억하기)
+  - ![workflow](https://user-images.githubusercontent.com/73927750/133128794-e4c244ea-743e-4c43-ac9c-29416a81f37b.JPG)
 
-# Media Files => master url에 추가 작업 필요
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'  # 여기에 media 파일을 모으겠습니다.
-```
+- models.py에서 CharField(choices=)설정하기
 
-```python
-# urls.py
-
-from django.conf import settings
-from django.conf.urls.static import static
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('articles/', include('articles.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-# import와 + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 추가
-```
-
-```python
-# models.py
-
-from imagekit import processors
-from imagekit.models import ProcessedImageField, ImageSpecField
-from imagekit.processors import Thumbnail, ResizeToFill, ResizeToFit
-
-class Article(models.Model):
-    image = ProcessedImageField(
-        upload_to='articles',
-        blank=True,
-        processors=[ResizeToFit(500, 500),],  # 가로/세로중에 더 긴 곳을 500에 맞추고 비율대로 축소/확대함
-        format='JPEG',
-        options={'quality': 100, }
-    )
-    thumbnail_image = ImageSpecField(
-        source='image',
-        processors=[Thumbnail(50, 50), ],
-        format='JPEG', 
-        options={'quaility': 50, }
-    )
-# ImageField나 resizing tool인 imagekit을 설치해서 사용자가 업로드한 이미지를 등록한다.
-# pip install django-imagekit
-# ImageField(upload_to='images') -> BASE_DIR/media/images에 이미지 url 모음(MEDIA_ROOT에서 설정함)
-```
-
-```html
-# form.html
-
-{% load bootstrap5 %}
-
-<form method="POST" enctype="multipart/form-data">
-  {% csrf_token %}
-  {% bootstrap_form form %}
-  {% buttons submit='제출' reset='재작성' %}{% endbuttons %}
-</form>
--> 이미지를 넘기기 위해서는 반드시 enctype="multipart/form-data" 작성!! 
-```
-
-```python
-# views.py
-
-@require_http_methods(['GET', 'POST'])
-def create(request):
-    if request.method == 'POST':
-        # <form>에서 온 이미지는 POST에 들어있지 않고 request.FILES에 들어있기 때문에 반드시 작성!! 
-        form = ArticleForm(request.POST, request.FILES)
-        if form.is_valid():
-            article = form.save()
-            return redirect('articles:detail', article.pk)
-    else:
-        form = ArticleForm()
+  - ```python
+    # models.py
     
-    context = {'form': form, }
-    return render(request, 'articles/form.html', context)
-```
-
-
-
-## 3. pagination
-
-```python
-# views.py
-
-from django.core.paginator import Paginator
-
-@require_safe
-def index(request):
-    articles = Article.objects.order_by('-pk')
+    CATEGORY_CHOICES = [
+        # (DB에 저장되는 값, 사용자가 보는 값)
+        ('python', '파이썬'),
+        ('web', '웹'),
+        ('django', '장고'),
+    ]
     
-    # 한 페이지에 5개씩 가져올거임
-    paginator = Paginator(articles, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    class Question(models.Model):
+        title = models.CharField(max_length=100)
+        # choices=CATEGORY_CHOICES에 써주기
+        category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
+    ```
 
-    context = {
-        'page_obj': page_obj,
-    }
-    return render(request, 'articles/index.html', context)
-```
+- 추가적인 validation 설정하기
 
-```html
-# index.html
+  - ```python
+    # views.py
+    
+    @require_http_methods(['GET', 'POST'])
+    def create(request):
+        if request.method == 'POST':
+            # 사용자가 전달한 데이터를 내가 확인하기는 좀 그러니까 -> QuestionForm가 대신 열어보고 valid한지 확인해줘!
+            form = QuestionForm(request.POST)
+            # valid하다면 확인된 깔끔한 데이터(cleaned_data : dict 형태) 중에 is_save의 상태를 보고 on이면 save()해줘! => 그러면 is_save는 어디에?? => forms.py에 직접 설정
+            if form.is_valid():
+                if form.cleaned_data['is_save']:
+                    question = form.save()
+                    return redirect('board:detail', question.pk)
+                else:
+                    return redirect('board:create')
+        else:
+            form = QuestionForm()
+        context = {
+            'form': form,
+        }
+        return render(request, 'board/form.html', context)
+    ```
 
-<h1>Article Index</h1>
+  - ```python
+    # forms.py
+    
+    class QuestionForm(forms.ModelForm):
+        """
+        <추가적인 validation을 설정하는 방법!!!>
+        title = forms.CharField(max_length=100, required=True)
+        category = forms.CharField(max_length=100, required=True)
+        content = forms.CharField(widget=forms.Textarea, required=True)
+        => 자동으로 작성되어 있음 => 덮어 써야함
+        """
+    
+        # model의 필드와 이름이 같다면, DB에 저장이 된다.
+        title = forms.CharField(
+            min_length=2,
+            max_length=100,
+            required=True
+        )
+    
+        content = forms.CharField(
+            widget=Textarea,
+            required=True,
+            min_length=2,
+            max_length=10000
+        )
+    
+        # model의 필드가 아니면 HTML + 검증은 하되 DB에 저장은 하지 않는다.
+        is_save = forms.BooleanField(
+            required=False, label='wanna save?', help_text='저장하려면 체크하세요')
+    
+        class Meta:
+            model = Question
+            # 아래 필드는 모델(models.py)에 있어야 하며,
+            # 데이터 검증 + HTML생성을 합니다.
+            fields = ('title', 'category', 'content')
+            # exclude = ('field_a')
+    
+    ```
 
-# 5개씩 가져올거임
-{% for article in page_obj %}
-<hr>
-<div>
-  <p>글 번호: {{ article.pk }}</p>
-  <p>글 제목: {{ article.title }}</p>
-  <p>
-    # 썸네일 이미지가 존재한다면 썸네일 이미지를 보여주고 -> {{ article.thumbnail_image.url }} .url까지!!
-    {% if article.thumbnail_image %}
-    <img src="{{ article.thumbnail_image.url }}" alt="">
-    # 존재하지 않는다면 default 이미지를 보여줌
-    {% else %}
-    <img width="50" src="https://image.shutterstock.com/image-vector/male-default-placeholder-avatar-profile-260nw-387516193.jpg" alt="placeholder">
-    {% endif %}
-  </p>
-  <p>글 내용: {{ article.content }}</p>
-  <p>
-    <a href="{% url 'articles:detail' article.pk %}">
-      [DETAIL]
-    </a>
-  </p>
-</div>
-{% empty %}
-<div>
-  No articles... YET!
-</div>
-{% endfor %}
+## 
 
-# 페이지 아래쪽에 pagination (bootstrap으로)
-<div class="d-flex justify-content-center">
-  {% bootstrap_pagination page_obj  %}
-</div>
-```
+## 2. static 
 
-```html
-# detail.html
+- 가장 먼저 settings.py에 등록하기
 
-{% block content %}
-<h1>{{ article.title }}</h1>
+  - ```python
+    # settings.py 
+    STATIC_URL = '/static/'
+    
+    # static 파일을 찾을때 여기도 같이 찾아주세요~ => 홈파일 아래에 static~ 폴더가 있어야함
+    STATICFILES_DIRS = [BASE_DIR / 'static', ]
+    # 위의 설정이 없다면 django는 자동으로 app아래에 있는 static폴더에만 접근한다.
+    ```
 
-# content(TextField)에서 \n를 쳤을 경우 나중에 조회했을 때도 \n가 적용되게 하는 방법
-# -> |linebreaksbr
-<p>{{ article.content|linebreaksbr }}</p>
-  
-<div>
-  # 이미지가 존재한다면(article.image) -> {{ article.image.url }} .url 작성!! 해서 보여주기 
-  {% if article.image %}
-    <img src="{{ article.image.url }}" alt="{{ article.image }}" width="300">
-  {% endif %}
-</div>
-```
+  -  ```html
+     # base.html
+     
+     {% load bootstrap5 %}	# bootstrap5을 사용하겠다.
+     {% load static %}	    # static을 사용하겠다.
+     <!DOCTYPE html>
+     <html lang="en">
+     <head>
+       <meta charset="UTF-8">
+       <meta http-equiv="X-UA-Compatible" content="IE=edge">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       # 홈폴더 아래에 있는 static/css~
+       <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+       # app 아래에 있는 static/board/css~
+       <link rel="stylesheet" href="{% static 'board/css/custom.css' %}">
+     </head>
+     <body>
+       # 같은 templates에 있는 _navbar.html를 가져오겠다! => block와 비슷
+       {% include '_navbar.html' %}
+       <div class="container">
+         {% block content %}{% endblock content %} 
+       </div>
+       <script src="{% static 'js/bootstrap.min.js' %}"></script>
+     </body>
+     </html>
+     ```
 
+
+
+## 3. Pagination
+
+- views.py에서 index()에서 불러온다.
+
+  - ```python
+    # views.py
+    
+    from django.core.paginator import Paginator
+    
+    @require_safe
+    def index(request):
+        questions = Question.objects.order_by('-pk')
+        # 한 페이지에 2개의 항목씩 가져온다!
+        paginator = Paginator(questions, 2)
+        # url에 ?page=<숫자> -> 숫자를 가져오는 것임
+        page_number = request.GET.get('page')
+        # 가져온 page 숫자에 해당하는 객체들을 가져온다
+        page_obj = paginator.get_page(page_number)
+        context = {
+            # 해당 페이지에 존재하는 양만큼의 페이지 내용이 전달
+            'page_obj': page_obj,
+        }
+        return render(request, 'board/index.html', context)
+    ```
+
+  - ```html
+    # index.html
+    
+    {% extends 'base.html' %}
+    {% load bootstrap5 %}
+    {% block content %}
+    
+    <h1>index page</h1>
+    <ul>
+      # 해당 페이지에 존재하는 question만 가져옴
+      {% for question in page_obj %}
+      <li>
+        <a href="{% url 'board:detail' question.pk %}">{{ question.title }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    
+    <div class="d-flex justify-content-center">
+      {% bootstrap_pagination page_obj %}
+    </div>
+    
+    {% endblock content %}
+    ```
+
+
+
+## 4. 기타
+
+- content에는 분명히 여러줄의 문장을 입력했지만 조회했을 경우 한줄로 나온다(입력한 양식대로 X)
+
+  - ```html
+    # detail.html
+    
+    # question.content 다음에 파이프(|)를 이용해서 linebreaksbr(한 줄씩 br)활용
+    <p>{{ question.content|linebreaksbr }}</p>
+    ```
+
+    
