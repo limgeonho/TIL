@@ -176,3 +176,41 @@
         })
     </script>
   ```
+
+- ```html
+  <body>
+    <button>댕댕이</button>
+    <div class="dog_box"></div>
+    <!-- axios CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  
+    <script>
+      const URL = 'https://dog.ceo/api/breeds/image/random'
+      const myButton = document.querySelector('button')
+      
+      // 버튼을 클릭하면, dog APi로 요청을 보냄  
+      myButton.addEventListener('click', function(){
+        axios.get(URL)
+          .then(response =>{
+            return response.data
+          })
+          .then(response =>{
+            // console.log(response.message)
+            const imgUrl = response.message
+            // img 태그 생성
+            const newImgTag = document.createElement('img')
+            // img 태그의 src 속성에 imgUrl 값 할당
+            newImgTag.src = imgUrl
+            // div 태그의 자식 태그로 완성된 img 태그를 삽입
+            const dogBox = document.querySelector('.dog_box')
+            dogBox.appendChild(newImgTag)
+          })
+          .catch(error =>{
+            console.log(error)
+          })
+      })
+    </script>
+  </body>
+  ```
+
+  
